@@ -13,10 +13,16 @@
 
   - name: Mise à jour des paquets
     ansible.builtin.command: sudo apt-get update -y
+    ansible.builtin.command: sudo apt-get install -y ca-certificates curl
+    ansible.builtin.command: sudo install -m 0755 -d /etc/apt/keyrings
+    ansible.builtin.command: sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+    ansible.builtin.command: sudo chmod a+r /etc/apt/keyrings/docker.asc
+    ansible.builtin.command: echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    ansible.builtin.command: sudo apt-get update
 
   - name: Installation des paquets nécessaires
     ansible.builtin.command: sudo apt-get install -y usb_modeswitch
-    ansible.builtin.command: sudo apt-get install -y docker.io
+    ansible.builtin.command: sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
   - name: Ajout de l'utilitaire "usb_modeswitch" dans udev pour le changement de mode sur certain modem
     ansible.builtin.command: sudo sed -i -e 's/ATTR{idVendor}=="12d1", ATTR{idProduct}=="15c1", RUN+="usb_modeswitch '\''\/%k'\''"/ATTR{idVendor}=="12d1", ATTR{idProduct}=="1573", RUN+="'\''\/usr\/sbin\/usb_modeswitch -W -v 12d1 -p 1573 -u 1'\''"/' /lib/udev/rules.d/40-usb_modeswitch.rules
@@ -25,6 +31,15 @@
     ansible.builtin.template:
       src: ./res/3G4G.nmconnection
       dest: /etc/NetworkManager/system-connections/3G4G.nmconnection
+
+  - name: Ajoute le script d'autoupdate
+    ansible.builtin.template:
+      src: ./res/autoupdate.sh
+      dest: /opt/autoupdate.sh
+    ansible.builtin.command: sudo chmod +x /opt/autoupdate.sh
+
+  - name: Ajoute le script d'autoupdate dans crontab
+    ansible.builtin.command: crontab -l | { cat; echo "@reboot /opt/autoupdate.sh"; } | crontab -
 
   - name: Activation de la connexion 3G4G
     ansible.builtin.command: sudo nmcli connection up 3G4G

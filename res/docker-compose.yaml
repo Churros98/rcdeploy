@@ -8,3 +8,11 @@ services:
     devices:
       - /dev/gpiomem
       - /dev/vchiq
+  ustreamer:
+    image: theorywrong/ustreamer:latest
+    container_name: ustreamer
+    restart: always
+    privileged: true
+    command: -d /dev/video0 -Z --host 192.168.1.15 --port 1337 -f 25 -c M2M-IMAGE
+    devices:
+      - /dev/video0
