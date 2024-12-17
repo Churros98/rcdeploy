@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  voiturerc:
+    image: theorywrong/rctelemetrie
+    container_name: telemetrie
+    restart: always
+    devices:
+      - /dev/gpiomem
+      - /dev/vchiq

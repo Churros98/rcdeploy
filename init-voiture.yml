@@ -1,0 +1,41 @@
+---
+- name: Initialisation des voitures
+  hosts: voitures
+  remote_user: master
+
+  tasks:
+  - name: Modification de la configuration matériel (Caméra/GPIO/UART/GPU)
+    ansible.builtin.command: sudo raspi-config nonint do_legacy 0
+    ansible.builtin.command: sudo sed -i '/^dtoverlay=pwm-2chan/ c\dtoverlay=pwm-2chan,pin=12,func=4,pin2=13,func2=4' /boot/config.txt || echo 'dtoverlay=pwm-2chan,pin=12,func=4,pin2=13,func2=4' | sudo tee -a /boot/config.txt
+    ansible.builtin.command: sudo grep -qxF '[all]' /boot/config.txt || echo '[all]' | sudo tee -a /boot/config.txt
+    ansible.builtin.command: sudo grep -qxF 'gpu_mem=128' /boot/config.txt || echo 'gpu_mem=128' | sudo tee -a /boot/config.txt
+    ansible.builtin.command: sudo grep -qxF 'enable_uart=1' /boot/config.txt || echo 'enable_uart=1' | sudo tee -a /boot/config.txt
+
+  - name: Mise à jour des paquets
+    ansible.builtin.command: sudo apt-get update -y
+
+  - name: Installation des paquets nécessaires
+    ansible.builtin.command: sudo apt-get install -y usb_modeswitch
+    ansible.builtin.command: sudo apt-get install -y docker.io
+
+  - name: Ajout de l'utilitaire "usb_modeswitch" dans udev pour le changement de mode sur certain modem
+    ansible.builtin.command: sudo sed -i -e 's/ATTR{idVendor}=="12d1", ATTR{idProduct}=="15c1", RUN+="usb_modeswitch '\''\/%k'\''"/ATTR{idVendor}=="12d1", ATTR{idProduct}=="1573", RUN+="'\''\/usr\/sbin\/usb_modeswitch -W -v 12d1 -p 1573 -u 1'\''"/' /lib/udev/rules.d/40-usb_modeswitch.rules
+
+  - name: Ecrire la configuration NetworkManager (et ModemManager) pour le LTE
+    ansible.builtin.template:
+      src: ./res/3G4G.nmconnection
+      dest: /etc/NetworkManager/system-connections/3G4G.nmconnection
+
+  - name: Activation de la connexion 3G4G
+    ansible.builtin.command: sudo nmcli connection up 3G4G
+
+  - name: Installation des images
+    ansible.builtin.command: sudo docker pull theorywrong/rctelemetrie
+
+  - name: Ajout du compose
+    ansible.builtin.template:
+      src: ./res/docker-compose.yaml
+      dest: /opt/docker-compose.yaml
+
+  - name: Redémarrage
+    ansible.builtin.command: sudo reboot
