@@ -1,0 +1,12 @@
+[Unit]
+Description=Stream de la video
+After=ModemManager.service
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=10
+ExecStart=/usr/bin/sh /usr/local/bin/ustreamer_start.sh
+
+[Install]
+WantedBy=multi-user.target

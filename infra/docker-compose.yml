@@ -1,0 +1,21 @@
+services:
+  surrealdb:
+    image: "surrealdb/surrealdb:v1.5.3"
+    container_name: "surrealdb"
+    restart: always
+    ports:
+      - "8000:8000"
+    command:
+      - start
+      - --auth
+      - --user
+      - master
+      - --pass
+      - CHANGEHERE
+  jpegproxy:
+    image: "theorywrong/jpeg_proxy:latest"
+    container_name: "jpeg_proxy"
+    restart: always
+    ports:
+      - "8100:8000"
+      - "1337:1337"
